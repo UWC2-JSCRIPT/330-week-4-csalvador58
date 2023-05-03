@@ -20,11 +20,14 @@
       "/node_modules/"
     ],
     "preset": "@shelf/jest-mongodb",
-    "watchPathIgnorePatterns": ["globalConfig"]
+    "watchPathIgnorePatterns": [
+      "globalConfig"
+    ]
   },
   "dependencies": {
     "express": "^4.18.2",
-    "mongoose": "^7.0.4"
+    "mongoose": "^7.0.4",
+    "uuidv4": "^6.2.13"
   },
   "devDependencies": {
     "@shelf/jest-mongodb": "^4.1.7",
