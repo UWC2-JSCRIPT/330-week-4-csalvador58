@@ -1,7 +1,5 @@
 const { Router } = require('express');
 const router = Router();
-const bcrypt = require('bcrypt');
-const saltRounds = 5;
 
 const userDAO = require('../daos/user');
 const tokenDAO = require('../daos/token');
@@ -24,19 +22,25 @@ router.post('/signup', async (req, res, next) => {
   if (!password || JSON.stringify(password) === '{}') {
     res.status(400).send('Password is invalid or missing');
   } else {
-    // Password is valid
-    const user = await userDAO.findUser(email);
-    console.log('user');
-    console.log(user);
-    if(user) {
-        res.status(409).send('User email already exists.'); 
+    try {
+      const user = await userDAO.findUser(email);
+
+      // create new user if not already in db
+      if (!user) {
+        try {
+          const storedUser = await userDAO.createUser(email, password);
+          console.log('storedUser status: ')
+          console.log(storedUser)
+          res.status(200).send('New user created successfully')
+        } catch (error) {
+          res.status(500).send(error.message);
+        }
+      } else {
+        res.status(409).send('User email already exists.');
+      }
+    } catch (error) {
+      res.status(500).send(error.message);
     }
-
-    // encrypt password
-    await bcrypt
-    const createUser = await userDAO.createUser()
-
-    res.status(200).send('Test');
   }
 });
 
