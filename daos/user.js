@@ -5,7 +5,7 @@ const saltRounds = 1;
 
 module.exports = {};
 
-module.exports.findUser = async (userEmail) => {
+module.exports.getUser = async (userEmail) => {
   try {
     const user = await User.findOne({ email: userEmail }).lean();
     // console.log('DAO - user: ');
@@ -18,8 +18,6 @@ module.exports.findUser = async (userEmail) => {
 
 module.exports.createUser = async (userEmail, userPassword) => {
   return new Promise((resolve, reject) => {
-    // generate new userId
-    const id = uuidv4();
 
     // encrypt password and store user in db
     bcrypt.hash(userPassword, saltRounds).then(async (hashedPassword) => {
@@ -28,7 +26,6 @@ module.exports.createUser = async (userEmail, userPassword) => {
       try {
         const storedUser = await User.create({
           email: userEmail,
-          userId: id,
           password: hashedPassword,
         });
         // console.log('DAO - storedUser: ');

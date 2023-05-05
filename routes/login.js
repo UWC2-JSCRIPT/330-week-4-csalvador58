@@ -1,44 +1,34 @@
 const { Router } = require('express');
 const router = Router();
-
+const { v4: uuidv4 } = require('uuid');
 const userDAO = require('../daos/user');
 const tokenDAO = require('../daos/token');
 
-// POST / - find the user with the provided email. Use bcrypt to compare stored password with the incoming password. If they match, generate a random token with uuid and return it to the user.
+// POST / - get the user with the provided email. Use bcrypt to compare stored password with the incoming password. If they match, generate a random token with uuid and return it to the user.
 
 router.use(async (req, res, next) => {
   console.log('Test use - retrieve user from db');
-  // check if user exists
-  try {
-    // console.log('req.body.email');
-    // console.log(req.body.email);
-    const user = await userDAO.findUser(req.body.email);
-    req.user = user;
 
-    console.log('req.user found:');
-    console.log(req.user);
+  if (req.body.email) req.user = await userDAO.getUser(req.body.email);
 
-    next();
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
+  next();
 });
 
 router.post('/logout', async (req, res, next) => {
   console.log('Test post /logout');
 
   if (!req.user) {
-    res.status(401).send('Test');
+    res.status(401).send('Signup required');
   }
 });
 
 router.post('/password', async (req, res, next) => {
   console.log('Test post /password');
-  const { email, password } = req.body;
-  console.log(`Email: ${email}, Password: ${password}`);
+  //   const { email, password } = req.body;
+  //   console.log(`Email: ${email}, Password: ${password}`);
 
   if (!req.user) {
-    res.status(401).send('Test');
+    res.status(401).send('Signup required');
   }
 });
 
@@ -47,7 +37,7 @@ router.post('/', async (req, res, next) => {
 
   if (req.user) {
     const { email, password } = req.body;
-    console.log(`Email: ${email}, Password: ${password}`);
+    // console.log(`Email: ${email}, Password: ${password}`);
 
     // Check if login data is valid
     if (!password || JSON.stringify(password) === '{}') {
@@ -56,13 +46,17 @@ router.post('/', async (req, res, next) => {
       res.status(400).send('Email is invalid or missing');
     } else {
       // validate login
-      console.log('Validate Login: ');
-      console.log(`Password: ${password}, HashedPW: ${req.user.password}`);
       const isValid = await userDAO.validateLogin(password, req.user.password);
-      isValid ? res.status(200).send('Password verified') : res.status(401).send('Password does not match')
+
+      if (isValid) {
+        const newToken = await tokenDAO.makeTokenForUserId(req.user._id);
+        res.status(200).send({ token: newToken._id });
+      } else {
+        res.status(401).send('Password does not match');
+      }
     }
   } else {
-    res.status(401).send('Test');
+    res.status(401).send('Signup required');
   }
 });
 
@@ -81,16 +75,11 @@ router.post('/signup', async (req, res, next) => {
       res.status(400).send('Email is invalid or missing');
     } else {
       try {
-        //   console.log('req.body.email');
-        //   console.log(req.body.email);
-        //   console.log('req.body.password');
-        //   console.log(req.body.password);
         const storedUser = await userDAO.createUser(
           req.body.email,
           req.body.password
         );
-        console.log('storedUser status: ');
-        console.log(storedUser);
+        // console.log(`storedUser: ${storedUser}`);
         res.status(200).send('New user created successfully');
       } catch (error) {
         res.status(500).send(error.message);
