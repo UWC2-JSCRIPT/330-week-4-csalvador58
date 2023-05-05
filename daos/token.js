@@ -20,29 +20,33 @@ module.exports.makeTokenForUserId = async (userId) => {
 };
 
 module.exports.getUserIdFromToken = async (tokenString) => {
-  console.log('DAOS - tokenString');
-  console.log(tokenString);
+//   console.log('DAOS - tokenString');
+//   console.log(tokenString);
 
   try {
     const token = await Token.findById(tokenString).lean();
-    console.log('DAOS - userId');
-    console.log(token.userId);
+    // console.log('DAOS - userId');
+    // console.log(token.userId);
     return token.userId;
   } catch (error) {
-    throw new Error(error.message);
+    if(error.message.includes('Cast to ObjectId failed'))
+    throw new BadDataError(error.message);
   }
 };
 
 module.exports.removeToken = async (tokenString) => {
-  console.log('DAOS - tokenString');
-  console.log(tokenString);
+//   console.log('DAOS - tokenString');
+//   console.log(tokenString);
 
   try {
     const deleteToken = await Token.findByIdAndDelete(tokenString).lean();
-    console.log('DAOS - Deleted token string');
-    console.log(deleteToken);
+    // console.log('DAOS - Deleted token string');
+    // console.log(deleteToken);
     return deleteToken;
   } catch (error) {
     throw new Error(error.message);
   }
 };
+
+class BadDataError extends Error {};
+module.exports.BadDataError = BadDataError;

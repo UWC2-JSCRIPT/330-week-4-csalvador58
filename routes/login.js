@@ -4,28 +4,37 @@ const { v4: uuidv4 } = require('uuid');
 const userDAO = require('../daos/user');
 const tokenDAO = require('../daos/token');
 
-// POST / - get the user with the provided email. Use bcrypt to compare stored password with the incoming password. If they match, generate a random token with uuid and return it to the user.
-
 router.use(async (req, res, next) => {
   console.log('Test use - is user logged in');
 
+  // Check if user has a token
   if (req.headers.authorization) {
     console.log('Verifying token...');
 
     const tokenString = req.headers.authorization.split(' ');
+    // console.log('tokenString: ');
+    // console.log(tokenString);
+    try {
+      const userId = await tokenDAO.getUserIdFromToken(tokenString[1]);
+      console.log(`userId from token: ${userId}`);
 
-    console.log('tokenString: ');
-    console.log(tokenString);
-    const userId = await tokenDAO.getUserIdFromToken(tokenString[1]);
-    console.log(`userId from token: ${userId}`);
-    req.user = await userDAO.getUser({ _id: userId });
-    req.user.isLoggedIn = true;
-    next();
+      if (userId) {
+        req.user = await userDAO.getUser({ _id: userId });
+        req.user.isLoggedIn = true;
+      }
+      next();
+    } catch (error) {
+      if (error instanceof tokenDAO.BadDataError) {
+        res.status(401).send(error.message);
+      } else {
+        res.status(400).send(error.message);
+      }
+    }
   } else {
+    // request has no token data
+    console.log('Request has no token data')
     req.user = {};
     req.user.isLoggedIn = false;
-    console.log('req.user: ')
-    console.log(req.user)
     next();
   }
 });
@@ -40,18 +49,31 @@ router.post('/logout', async (req, res, next) => {
 
 router.post('/password', async (req, res, next) => {
   console.log('Test post /password');
-  //   const { email, password } = req.body;
-  //   console.log(`Email: ${email}, Password: ${password}`);
+  const { password } = req.body;
+  console.log(`Password: ${password}`);
 
-  if (!req.user.isLoggedIn) {
+  if (req.user.isLoggedIn && password !== '') {
+    // change password
+    // console.log('Change password for: ');
+    // console.log(req.user);
+    try {
+      const updatedPassword = await userDAO.updateUserPassword(
+        req.user._id,
+        password
+      );
+      res.status(200).send('User password is now updated.');
+    } catch (error) {
+      res.status(400).send(error.message);
+    }
+  } else if (password === '') {
+    res.status(400).send('Password invalid');
+  } else {
     res.status(401).send('Login required');
   }
 });
 
 router.post('/', async (req, res, next) => {
   console.log('Test post /');
-
-  //   POST / - find the user with the provided email. Use bcrypt to compare stored password with the incoming password. If they match, generate a random token with uuid and return it to the user.
 
   // Check if login data is valid
   const { email, password } = req.body;
@@ -68,7 +90,7 @@ router.post('/', async (req, res, next) => {
 
     if (user) {
       // validate login with bcrypt
-      console.log('Checking password with bcrypt...')
+    //   console.log('Checking password with bcrypt...');
       const isValid = await userDAO.validateLogin(password, user.password);
 
       if (isValid) {
