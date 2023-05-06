@@ -12,15 +12,17 @@ router.use(async (req, res, next) => {
     console.log('Verifying token...');
 
     const tokenString = req.headers.authorization.split(' ');
-    // console.log('tokenString: ');
-    // console.log(tokenString);
+    console.log('tokenString: ');
+    console.log(tokenString);
     try {
       const userId = await tokenDAO.getUserIdFromToken(tokenString[1]);
       console.log(`userId from token: ${userId}`);
-
+      // retrieve user from db to be used in other routes
       if (userId) {
         req.user = await userDAO.getUser({ _id: userId });
         req.user.isLoggedIn = true;
+      } else {
+        req.user = { isLoggedIn: false };
       }
       next();
     } catch (error) {
@@ -32,9 +34,8 @@ router.use(async (req, res, next) => {
     }
   } else {
     // request has no token data
-    console.log('Request has no token data')
-    req.user = {};
-    req.user.isLoggedIn = false;
+    console.log('Request has no token data');
+    req.user = { isLoggedIn: false };
     next();
   }
 });
@@ -42,7 +43,18 @@ router.use(async (req, res, next) => {
 router.post('/logout', async (req, res, next) => {
   console.log('Test post /logout');
 
-  if (!req.user.isLoggedIn) {
+  if (req.user.isLoggedIn) {
+    const tokenString = req.headers.authorization.split(' ');
+    console.log(`Logout - token string: ${tokenString[1]}`);
+    try {
+      const logoutUser = await tokenDAO.removeToken(tokenString[1]);
+      console.log('logoutUser');
+      console.log(logoutUser);
+      res.status(200).send('User token removed');
+    } catch (error) {
+      res.status(500).send(error.message);
+    }
+  } else {
     res.status(401).send('Login required');
   }
 });
@@ -89,21 +101,23 @@ router.post('/', async (req, res, next) => {
     const user = await userDAO.getUser({ email: req.body.email });
 
     if (user) {
-      // validate login with bcrypt
-    //   console.log('Checking password with bcrypt...');
-      const isValid = await userDAO.validateLogin(password, user.password);
+      try {
+        // validate login with bcrypt
+        //   console.log('Checking password with bcrypt...');
+        const isValid = await userDAO.validateLogin(password, user.password);
 
-      if (isValid) {
         // create a login token
         const newToken = await tokenDAO.makeTokenForUserId(user._id);
-
-        console.log(
-          `User: ${user.email} is now logged in. Token: ${newToken._id}`
-        );
-
+        // console.log(
+        //   `User: ${user.email} is now assigned to Token: ${newToken._id}`
+        // );
         res.status(200).send({ token: newToken._id });
-      } else {
-        res.status(401).send('Password does not match');
+      } catch (error) {
+        if (error instanceof userDAO.BadDataError) {
+          res.status(401).send('Password does not match');
+        } else {
+          res.status(500).send(error.message);
+        }
       }
     } else {
       res.status(401).send('User does not exist, signup is required.');
@@ -134,7 +148,7 @@ router.post('/signup', async (req, res, next) => {
           req.body.email,
           req.body.password
         );
-        console.log(`storedUser: ${storedUser}`);
+        // console.log(`storedUser: ${storedUser}`);
         res.status(200).send('New user created successfully');
       } catch (error) {
         res.status(500).send(error.message);

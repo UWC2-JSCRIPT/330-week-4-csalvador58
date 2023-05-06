@@ -20,8 +20,8 @@ module.exports.makeTokenForUserId = async (userId) => {
 };
 
 module.exports.getUserIdFromToken = async (tokenString) => {
-//   console.log('DAOS - tokenString');
-//   console.log(tokenString);
+  //   console.log('DAOS - tokenString');
+  //   console.log(tokenString);
 
   try {
     const token = await Token.findById(tokenString).lean();
@@ -29,17 +29,16 @@ module.exports.getUserIdFromToken = async (tokenString) => {
     // console.log(token.userId);
     return token.userId;
   } catch (error) {
-    if(error.message.includes('Cast to ObjectId failed'))
-    throw new BadDataError(error.message);
+    if (error.message.includes('Cast to ObjectId failed'))
+      throw new BadDataError(error.message);
   }
 };
 
-module.exports.removeToken = async (tokenString) => {
-//   console.log('DAOS - tokenString');
-//   console.log(tokenString);
-
+module.exports.removeToken = async (token) => {
+  //   console.log('DAOS - tokenString');
+  //   console.log(tokenString);
   try {
-    const deleteToken = await Token.findByIdAndDelete(tokenString).lean();
+    const deleteToken = await Token.findOneAndDelete({ _id: token }).lean();
     // console.log('DAOS - Deleted token string');
     // console.log(deleteToken);
     return deleteToken;
@@ -48,5 +47,5 @@ module.exports.removeToken = async (tokenString) => {
   }
 };
 
-class BadDataError extends Error {};
+class BadDataError extends Error {}
 module.exports.BadDataError = BadDataError;

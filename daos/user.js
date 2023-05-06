@@ -1,7 +1,7 @@
 const User = require('../models/user');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
-const saltRounds = 5;
+const saltRounds = 1;
 
 module.exports = {};
 
@@ -67,7 +67,11 @@ module.exports.validateLogin = async (password, hashedPassword) => {
     bcrypt.compare(password, hashedPassword).then((result) => {
     //   console.log('DAO - result');
     //   console.log(result);
-      resolve(result);
+      if(result) {
+          resolve(result);
+      } else {
+        reject(new BadDataError('Password does not match'))
+      }
     });
   });
 };
