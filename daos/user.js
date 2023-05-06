@@ -1,13 +1,12 @@
 const User = require('../models/user');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
+// saltRounds => 1 used for testing only, 10 is recommended
 const saltRounds = 1;
 
 module.exports = {};
 
 module.exports.getUser = async (userObj) => {
-//   console.log('DAOS - userObj');
-//   console.log(userObj);
   try {
     const user = await User.findOne(userObj).lean();
     // console.log('DAO - user: ');
@@ -33,7 +32,11 @@ module.exports.createUser = async (userEmail, userPassword) => {
         // console.log(storedUser);
         resolve(storedUser);
       } catch (error) {
-        reject(new Error(error.message));
+        if (error.message.includes('duplicate key')) {
+          reject(new BadDataError('Email already exists'));
+        } else {
+          reject(new Error(error.message));
+        }
       }
     });
   });
@@ -43,7 +46,7 @@ module.exports.updateUserPassword = async (userId, newPassword) => {
   return new Promise((resolve, reject) => {
     // encrypt new password and store in db
     bcrypt.hash(newPassword, saltRounds).then(async (hashedPassword) => {
-    //   console.log(`DAOS - New hashed password: ${hashedPassword}`);
+      //   console.log(`DAOS - New hashed password: ${hashedPassword}`);
       try {
         const updatedPassword = await User.findOneAndUpdate(
           { _id: userId },
@@ -65,12 +68,12 @@ module.exports.updateUserPassword = async (userId, newPassword) => {
 module.exports.validateLogin = async (password, hashedPassword) => {
   return new Promise((resolve, reject) => {
     bcrypt.compare(password, hashedPassword).then((result) => {
-    //   console.log('DAO - result');
-    //   console.log(result);
-      if(result) {
-          resolve(result);
+      //   console.log('DAO - result');
+      //   console.log(result);
+      if (result) {
+        resolve(result);
       } else {
-        reject(new BadDataError('Password does not match'))
+        reject(new BadDataError('Password does not match'));
       }
     });
   });

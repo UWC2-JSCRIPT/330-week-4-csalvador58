@@ -4,9 +4,6 @@ const { v4: uuidv4 } = require('uuid');
 module.exports = {};
 
 module.exports.makeTokenForUserId = async (userId) => {
-  // console.log('DAOS -  userId')
-  // console.log(userId)
-
   try {
     const storedToken = await Token.create({
       userId: userId,
@@ -20,23 +17,25 @@ module.exports.makeTokenForUserId = async (userId) => {
 };
 
 module.exports.getUserIdFromToken = async (tokenString) => {
-  //   console.log('DAOS - tokenString');
-  //   console.log(tokenString);
-
   try {
     const token = await Token.findById(tokenString).lean();
-    // console.log('DAOS - userId');
-    // console.log(token.userId);
+    if (!token) {
+      throw new Error('Invalid token - userId not found');
+    }
     return token.userId;
   } catch (error) {
-    if (error.message.includes('Cast to ObjectId failed'))
+    if (
+      error.message.includes('Cast to ObjectId failed') ||
+      error.message.includes('Invalid token - userId not found')
+    ) {
       throw new BadDataError(error.message);
+    } else {
+      throw new Error(error.message);
+    }
   }
 };
 
 module.exports.removeToken = async (token) => {
-  //   console.log('DAOS - tokenString');
-  //   console.log(tokenString);
   try {
     const deleteToken = await Token.findOneAndDelete({ _id: token }).lean();
     // console.log('DAOS - Deleted token string');

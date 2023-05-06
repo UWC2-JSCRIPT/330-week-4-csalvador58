@@ -18,15 +18,13 @@ module.exports.createNote = async (userId, noteObj) => {
 };
 
 module.exports.getNote = async (noteId, userId) => {
-  console.log('DAOS - noteId');
-  console.log(noteId);
   if (!mongoose.Types.ObjectId.isValid(noteId)) {
     throw new BadDataError('Note ID is invalid.');
   }
   try {
     const note = await Note.findById(noteId).lean();
-    console.log('DAOS - note');
-    console.log(note);
+
+    // Check note's associated userId with current userId and throw an error if does not match
     if (note.userId == userId) {
       return note;
     } else {
@@ -36,8 +34,6 @@ module.exports.getNote = async (noteId, userId) => {
     if (error.message.includes('Restricted access')) {
       throw new UnauthorizedError(error.message);
     } else {
-      console.log('DAO - error');
-      console.log(error.message);
       throw new Error(error.message);
     }
   }
@@ -46,17 +42,19 @@ module.exports.getNote = async (noteId, userId) => {
 module.exports.getUserNotes = async (userId) => {
   try {
     const userNotes = await Note.find({ userId: userId }).lean();
+
+    // Check note's associated userId with current userId and throw an error if does not match
     userNotes.forEach((note) => {
-      console.log('typeof note.userId');
-      console.log(typeof note.userId);
-      console.log('typeof userId');
-      console.log(typeof userId);
-      if (note.userId != userId)
-        throw new UnauthorizedError('Restricted access.');
+      //   console.log(note.userId, ' ', userId)
+      if (note.userId != userId) throw new Error('Restricted access.');
     });
     return userNotes;
   } catch (error) {
-    throw new Error(error.message);
+    if (error.message.includes('Restricted access')) {
+      throw new UnauthorizedError(error.message);
+    } else {
+      throw new Error(error.message);
+    }
   }
 };
 

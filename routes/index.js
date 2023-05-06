@@ -3,29 +3,26 @@ const router = Router();
 const userDAO = require('../daos/user');
 const tokenDAO = require('../daos/token');
 
-router.use((req, res, next) => {
-  console.log(`${req.method} ${req.url} at ${new Date()}`);
-  next();
-});
+// router.use((req, res, next) => {
+//   console.log(`${req.method} ${req.url} at ${new Date()}`);
+//   next();
+// });
 
 router.use(async (req, res, next) => {
-  console.log('Test use - is user logged in');
+  //   console.log('Test use - is user logged in');
 
-  // Check if user has a token
   if (req.headers.authorization) {
-    console.log('Verifying token...');
-
     const tokenString = req.headers.authorization.split(' ');
-    // console.log('tokenString: ');
-    // console.log(tokenString);
     try {
       const userId = await tokenDAO.getUserIdFromToken(tokenString[1]);
-      console.log(`userId from token: ${userId}`);
+      //   console.log(`userId from token: ${userId}`);
+
       // retrieve user from db
       if (userId) {
         req.user = await userDAO.getUser({ _id: userId });
         req.user.isLoggedIn = true;
       } else {
+        // if no user, set isLoggedIn flag as false
         req.user = { isLoggedIn: false };
       }
       next();
@@ -33,12 +30,11 @@ router.use(async (req, res, next) => {
       if (error instanceof tokenDAO.BadDataError) {
         res.status(401).send(error.message);
       } else {
-        res.status(400).send(error.message);
+        res.status(500).send(error.message);
       }
     }
   } else {
-    // request has no token data
-    // console.log('Request has no token data');
+    // console.log('Request has no token data, isLoggedIn set as false');
     req.user = { isLoggedIn: false };
     next();
   }
