@@ -4,52 +4,18 @@ const { v4: uuidv4 } = require('uuid');
 const userDAO = require('../daos/user');
 const tokenDAO = require('../daos/token');
 
-router.use(async (req, res, next) => {
-  console.log('Test use - is user logged in');
 
-  // Check if user has a token
-  if (req.headers.authorization) {
-    console.log('Verifying token...');
-
-    const tokenString = req.headers.authorization.split(' ');
-    console.log('tokenString: ');
-    console.log(tokenString);
-    try {
-      const userId = await tokenDAO.getUserIdFromToken(tokenString[1]);
-      console.log(`userId from token: ${userId}`);
-      // retrieve user from db to be used in other routes
-      if (userId) {
-        req.user = await userDAO.getUser({ _id: userId });
-        req.user.isLoggedIn = true;
-      } else {
-        req.user = { isLoggedIn: false };
-      }
-      next();
-    } catch (error) {
-      if (error instanceof tokenDAO.BadDataError) {
-        res.status(401).send(error.message);
-      } else {
-        res.status(400).send(error.message);
-      }
-    }
-  } else {
-    // request has no token data
-    console.log('Request has no token data');
-    req.user = { isLoggedIn: false };
-    next();
-  }
-});
 
 router.post('/logout', async (req, res, next) => {
-  console.log('Test post /logout');
+  console.log('Login Test post /logout');
 
   if (req.user.isLoggedIn) {
     const tokenString = req.headers.authorization.split(' ');
-    console.log(`Logout - token string: ${tokenString[1]}`);
+    // console.log(`Logout - token string: ${tokenString[1]}`);
     try {
       const logoutUser = await tokenDAO.removeToken(tokenString[1]);
-      console.log('logoutUser');
-      console.log(logoutUser);
+    //   console.log('logoutUser');
+    //   console.log(logoutUser);
       res.status(200).send('User token removed');
     } catch (error) {
       res.status(500).send(error.message);
@@ -60,9 +26,9 @@ router.post('/logout', async (req, res, next) => {
 });
 
 router.post('/password', async (req, res, next) => {
-  console.log('Test post /password');
+  console.log('Login Test post /password');
   const { password } = req.body;
-  console.log(`Password: ${password}`);
+//   console.log(`Password: ${password}`);
 
   if (req.user.isLoggedIn && password !== '') {
     // change password
@@ -75,7 +41,7 @@ router.post('/password', async (req, res, next) => {
       );
       res.status(200).send('User password is now updated.');
     } catch (error) {
-      res.status(400).send(error.message);
+      res.status(500).send(error.message);
     }
   } else if (password === '') {
     res.status(400).send('Password invalid');
@@ -85,7 +51,7 @@ router.post('/password', async (req, res, next) => {
 });
 
 router.post('/', async (req, res, next) => {
-  console.log('Test post /');
+  console.log('Login Test post /');
 
   // Check if login data is valid
   const { email, password } = req.body;
@@ -95,7 +61,7 @@ router.post('/', async (req, res, next) => {
     !email ||
     JSON.stringify(email) === '{}'
   ) {
-    res.status(400).send(`Invalid Email/Passowrd`);
+    res.status(400).send(`Invalid Email/Password`);
   } else {
     // check if user email already exists
     const user = await userDAO.getUser({ email: req.body.email });
@@ -114,7 +80,7 @@ router.post('/', async (req, res, next) => {
         res.status(200).send({ token: newToken._id });
       } catch (error) {
         if (error instanceof userDAO.BadDataError) {
-          res.status(401).send('Password does not match');
+          res.status(401).send(error.message);
         } else {
           res.status(500).send(error.message);
         }
@@ -126,7 +92,7 @@ router.post('/', async (req, res, next) => {
 });
 
 router.post('/signup', async (req, res, next) => {
-  console.log('Test post /signup');
+  console.log('Login Test post /signup');
 
   // Check if login data is valid
   const { email, password } = req.body;
@@ -136,7 +102,7 @@ router.post('/signup', async (req, res, next) => {
     !email ||
     JSON.stringify(email) === '{}'
   ) {
-    res.status(400).send(`Invalid Email/Passowrd`);
+    res.status(400).send(`Invalid Email/Password`);
   } else {
     // check if user email already exists
     const userEmail = await userDAO.getUser({ email: req.body.email });
