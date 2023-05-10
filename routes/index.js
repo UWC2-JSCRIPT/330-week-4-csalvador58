@@ -10,9 +10,11 @@ const tokenDAO = require('../daos/token');
 
 router.use(async (req, res, next) => {
   //   console.log('Test use - is user logged in');
+  const tokenString = req.headers.authorization
+    ? req.headers.authorization.split(' ')
+    : [];
 
-  if (req.headers.authorization) {
-    const tokenString = req.headers.authorization.split(' ');
+  if (tokenString[0] === 'Bearer') {
     try {
       const userId = await tokenDAO.getUserIdFromToken(tokenString[1]);
       //   console.log(`userId from token: ${userId}`);
