@@ -7,12 +7,10 @@ const tokenDAO = require('../daos/token');
 router.post('/logout', async (req, res, next) => {
   //   console.log('Login Test post /logout');
 
-  if (req.user.isLoggedIn) {
-    // Extract token string => tokenString[1]
-    const tokenString = req.headers.authorization.split(' ');
+  if (req.user.token) {
 
     try {
-      const logoutUser = await tokenDAO.removeToken(tokenString[1]);
+      const logoutUser = await tokenDAO.removeToken(req.user.token);
       res.status(200).send('User logged out, token removed');
     } catch (error) {
       res.status(500).send(error.message);
@@ -26,7 +24,7 @@ router.post('/password', async (req, res, next) => {
   //   console.log('Login Test post /password');
   const { password } = req.body;
 
-  if (req.user.isLoggedIn && password !== '') {
+  if (req.user.token && password !== '') {
     try {
       const updatedPassword = await userDAO.updateUserPassword(
         req.user._id,

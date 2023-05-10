@@ -22,10 +22,10 @@ router.use(async (req, res, next) => {
       // retrieve user from db
       if (userId) {
         req.user = await userDAO.getUser({ _id: userId });
-        req.user.isLoggedIn = true;
+        req.user.token = tokenString[1];
       } else {
-        // if no user, set isLoggedIn flag as false
-        req.user = { isLoggedIn: false };
+        // if no user, set token as false
+        req.user = { token: false };
       }
       next();
     } catch (error) {
@@ -36,8 +36,8 @@ router.use(async (req, res, next) => {
       }
     }
   } else {
-    // console.log('Request has no token data, isLoggedIn set as false');
-    req.user = { isLoggedIn: false };
+    // console.log('Request has no token data, token set as false');
+    req.user = { token: false };
     next();
   }
 });

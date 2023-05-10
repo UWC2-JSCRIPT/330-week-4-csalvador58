@@ -5,7 +5,7 @@ const noteDAO = require('../daos/note');
 
 router.use(async (req, res, next) => {
   // require a logged in user before moving on to next routes
-  if (req.user.isLoggedIn) {
+  if (req.user.token) {
     next();
   } else {
     res.status(401).send('Login required');
